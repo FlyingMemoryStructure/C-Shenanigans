@@ -1,0 +1,1232 @@
+/*   Programmed by:    <Del Rosario, Michael Gabriel, Austria> <12137766> <S18A>
+
+     Description:      <This program is a simulation of LRRH scanning the forest in order to reach her granny, while trying to avoid pits and the Big Bad Wolf> 
+
+     Last modified:    <February 6, 2022> 
+
+    [Acknowledgements: <stdlib.h - No known source> <time.h - No known source>] 
+
+*/ 
+
+#include <stdio.h>
+#include <stdlib.h> //Used for rand
+#include <time.h> //Used for seeding rand
+
+//Arrays must be secure, statically defined on a specific size:
+#define MAX 16 //This is the maximum width and height of the map
+#define MIN 8 //This is the minimum width and height of the map
+
+/*   This function gets the map dimensions and object coordinates, and places them accordingly into the map array.
+
+     @param  (int*)   nHeight is the height of the map.
+     
+     @param  (int*)   nWidth is the width of the map.
+     
+     @param  (int*)  nGranny_y is granny's designated Y coordinate.
+
+     @param  (int*)  nGranny_x is granny's designated X coordinate.
+
+     @param  (int*)  nWolf_y is the wolf's designated Y coordinate.
+ 
+     @param  (int*)  nWolf_x is the wolf's designated X coordinate.
+     
+     @param  (int*)  nWoodsman_y is the woodsman's designated Y coordinate.
+ 
+     @param  (int*)  nWoodsman_x is the woodsman's designated X coordinate.
+     
+     @param  (int*)  nSpeed is the speed of the game if the mode is automatic.
+     
+     @param  (int*)  nMode is the mode of the game, either manual (enter to proceed) or automatic.
+     
+     @param  (int*)  nRisk is the frequency of the sense action, 1 being the lowest risk.
+     
+     @param  (char*) arrayMap is the array containing the map and its elements.
+     
+       :
+
+     @return (void) No return value.
+
+*/
+
+void 
+getInput (int *nWidth,
+          int *nHeight,
+		  int *nGranny_x,
+		  int *nGranny_y,
+		  int *nWolf_x,
+		  int *nWolf_y,
+		  int *nWoodsman_x,   
+		  int *nWoodsman_y,
+		  int *nSpeed,
+		  int *nMode,
+		  int *nRisk,
+		  char (*arrayMap)[MAX][MAX]);
+
+/*   This function checks if an input only contains integers greater than 0
+
+     @param  (int*)  nValidity is the boolean if an input is valid (1) or invalid (0).
+
+     @param  (char/string)  strInput[] is the input to be checked (either map width or height).
+
+       :
+
+     @return (int*) Return nValidity's value, 1 = true and 0 = false.
+
+*/ 
+
+int 
+isValid (char strInput[]);
+
+/*   This function checks the length of a string.
+
+     @param  (int*)  nLength is storage and value to be returned for a string's length.
+
+     @param  (char/string)  strInput[] is the input to be measure in length.
+
+       :
+
+     @return (int) Return nLength (string input's length) value.
+
+*/
+
+int 
+stringLength (char strInput[]);
+
+/*   This function corrects how coordinate inputs are casted, specifically with Y coordinates being preceded by a space if X is two digits.
+
+     @param  (int*) strInput is the current coordinate being worked on.
+     
+     :
+
+     @return (void) No return value.
+
+*/
+
+void 
+YCorrection (char *strInput);
+
+/*   This function provides a delay before proceeding into the next line.
+     
+     @param  (int) nSpeed is how fast the game should be, 1 being the fastest.
+     
+     :
+     
+     @return (void) No return value.
+     
+*/
+
+void 
+Delay (int nSpeed, int nMode);
+
+/*   This function prints 40 new lines in order to print LRRH's new location.
+
+     :
+     
+     @return (void) No return value.
+     
+*/
+
+void
+refreshFrame ();
+
+/*   This function centers the map whenever refreshFrame() is called.
+
+     :
+     
+     @return (void) No return value.
+     
+*/
+
+void 
+centerFrame ();
+
+/*   This function centers the map whenever displayEye() is called.
+
+     :
+     
+     @return (void) No return value.
+
+*/ 
+
+void 
+centerFrame2 ();
+
+/*   This function displays an eye to signify the use of the sense action.
+
+     :
+     
+     @return (void) No return value.
+
+*/
+
+void 
+displayEye ();
+
+/*   This function handles the cooldowns and LRRH's movements.
+
+     @param  (int*)  nLRRH_y is LRRH's changing Y coordinate.
+
+     @param  (int*)  nLRRH_x is LRRH's changing X coordinate.
+     
+     @param  (int*)  nRotations is the amount of rotations accumulated.
+     
+     @param  (int*)  nDebounce switches whether LRRH can move forward (she can't if she sensed or rotated).
+     
+     @param  (int*)  nRotateCooldown is the rotation cooldown.
+     
+     @param  (int*)  nSenseCooldown is the sense cooldown.
+     
+     @param  (int*)  nSenses is the amount of senses accumulated.
+     
+     @param  (int*)  nActions is the amount of fowards accumulated.
+     
+     @param  (int*)  nFinished is the finish status of the game, either win (1) or lose (anything else).
+     
+     @param  (int*)  nMetWoodsman signifies whether LRRH has met the woodsman (1) or not (0)
+     
+     @param  (int*)  nPassedWolf signifies whether LRRH has met the wolf with bread (1) or not (0)
+     
+     @param  (int*)  nRotated is a special debounce for visually tracking where woodsman would be (if LRRH has met him).
+     
+     @param  (int*)  nHasBread signifies whether LRRH came across a bakery.
+     
+     @param  (int*)  nHasFlower signifies whether LRRH came across a flower.
+     
+     @param  (int*)  nRisk is the frequency of the sense action, 1 being the lowest risk.
+     
+     @param  (int*)  nMode is the mode of the game, either manual (enter to proceed) or automatic.
+     
+     @param  (int)   nSpeed is the speed of the game if the mode is automatic.
+     
+     @param  (int)  nGranny_y is granny's designated Y coordinate.
+
+     @param  (int)  nGranny_x is granny's designated X coordinate.
+
+     @param  (int)  nWolf_y is the wolf's designated Y coordinate.
+ 
+     @param  (int)  nWolf_x is the wolf's designated X coordinate.
+     
+     @param  (int*)  nWoodsman_y is the woodsman's designated Y coordinate.
+ 
+     @param  (int*)  nWoodsman_x is the woodsman's designated X coordinate.
+
+     @param  (int)   nHeight is the height of the map.
+     
+     @param  (int)   nWidth is the width of the map.
+     
+     @param  (char*) arrayMap is the array containing the map and its elements.
+     
+     @param  (char*) cRotation is the current direction LRRH is facing.
+     
+       :
+
+     @return (void) No return value.
+
+*/
+
+void 
+gameCore (int   *nLRRH_y,          
+          int   *nLRRH_x,    
+		  int   *nRotations,       
+          int   *nDebounce,               
+		  int   *nRotateCooldown,   
+		  int   *nSenseCooldown,    
+		  int   *nSenses,                 
+		  int   *nActions,          
+		  int   *nFinished, 
+		  int   *nMetWoodsman,
+		  int   *nPassedWolf,
+		  int   *nRotated,
+		  int   *nHasBread,
+		  int   *nHasFlower,
+		  int   *nRisk,
+		  int   *nMode,
+		  int   nSpeed,                   
+		  int   nGranny_y,   
+		  int   nGranny_x,
+		  int   nWolf_y,   
+		  int   nWolf_x,
+		  int   *nWoodsman_y,   
+		  int   *nWoodsman_x,
+		  int   nHeight,           
+		  int   nWidth, 
+		  char  (*arrayMap)[MAX][MAX],   
+		  char   *cRotation);
+		  
+/*   This function checks the tile in front of LRRH, returning the proper effect it emits and its corresponding "detected" character.
+
+     @param  (int)  nLRRH_y is LRRH's changing Y coordinate.
+
+     @param  (int)  nLRRH_x is LRRH's changing X coordinate.
+     
+     @param  (int*)  nRotations is the amount of rotations accumulated.
+     
+     @param  (int)   nSenseCooldown is the sense action's cooldown.
+
+     @param  (int)   nSenses is the amount of senses accumulated.
+     
+     @param  (char) arrayMap is the array containing the map and its elements.
+     
+     @param  (char) cRotation is the current direction LRRH is facing.
+     
+     @param  (char*) cReplace is the letter that will replace the sensed tile.
+     
+       :
+
+     @return (char) letter that represents the effect the sensed object emits.
+             (l - Light, h - Heat, H - Howl, c - Scent, b - Breeze, s - Sound)
+
+*/
+			  
+char 
+senseAction (int   nLRRH_y, 
+             int   nLRRH_x, 
+			 int   nRotations, 
+			 int   nSenseCooldown, 
+			 int   nSenses, 
+			 char  (arrayMap)[MAX][MAX], 
+			 char  cRotation,
+			 char  *cReplace);
+				 
+/*   This rotates LRRH.
+
+     @param  (int*)  nRotateCooldown is the rotation cooldown.
+
+     @param  (int*)  nDebounce switches whether LRRH can move forward (she can't if she sensed or rotated).
+     
+     @param  (int*)  nRotations is the amount of rotations accumulated.
+     
+     @param  (char*) cRotation is the current direction LRRH is facing.
+     
+       :
+
+     @return (void) No return value.
+
+*/
+				 
+void
+rotateAction (int *nRotateCooldown,
+              int *nDebounce,
+			  int *nRotations,
+			  char *cRotation);
+
+/*   This detects if a sensed tiled in front of LRRH has a dangerous object.
+
+     @param  (int*)  nRotateCooldown is the rotation cooldown.
+
+     @param  (int)  nLRRH_y is LRRH's changing Y coordinate.
+
+     @param  (int)  nLRRH_x is LRRH's changing X coordinate.
+     
+     @param  (char) arrayMap is the array containing the map and its elements.
+     
+     @param  (char) cRotation is the current direction LRRH is facing.
+     
+       :
+
+     @return (void) No return value.
+
+*/
+
+void			  
+dangerAhead (int   *nRotateCooldown,
+             int   nLRRH_y,
+			 int   nLRRH_x,
+			 char  (arrayMap)[MAX][MAX],
+			 char  cRotation);
+
+int 
+main() 
+{
+	    //Variables set to 16 will make it so that they are invalid and initiate a loop
+        int nWidth = 16,
+		    nHeight = 16, 
+			nGranny_x = 16,
+			nGranny_y = 16, 
+			nLRRH_x = 0, 
+		    nLRRH_y = 0,
+		    nWolf_x = 16, 
+			nWolf_y = 16,
+			nWoodsman_x = 16,   
+		    nWoodsman_y = 16,
+		    nRotateCooldown = 4, 
+			nSenseCooldown = 1, 
+			nSenses = 0, 
+			nDebounce = 1, 
+			nSpeed = 0,
+			nRotations = 0, 
+			nActions = 0, 
+			nFinished = 0,
+			nMetWoodsman = 0,
+			nPassedWolf = 0,
+			nHasBread = 0,
+			nHasFlower = 0,
+			nRotated = 0,
+			nRisk = 0,
+			nMode = 0,
+			i = 0, j = 0, x = 0, 
+			y = 0, k = 0, l = 0;
+		
+		//cTemps are for temporary input storage before getting parsed
+        char arrayMap[MAX][MAX], 
+			 cRotation = '>';
+        
+        //Seed into a random sequence
+        srand(time(NULL));
+        
+        //Get map size and object coordinates, and set them in the map array:
+        getInput (&nWidth,
+                  &nHeight,
+		          &nGranny_x,
+		          &nGranny_y,
+		          &nWolf_x,
+		          &nWolf_y,
+		          &nWoodsman_x,   
+		          &nWoodsman_y,
+		          &nSpeed,
+		          &nMode,
+		          &nRisk,
+		          &arrayMap);
+        
+        //Initiate game's core until it finishes:
+        do {
+                gameCore(&nLRRH_y,
+				         &nLRRH_x,    
+						 &nRotations,       
+                         &nDebounce,               
+						 &nRotateCooldown,
+						 &nSenseCooldown,
+						 &nSenses,                 
+						 &nActions,
+						 &nFinished, 
+						 &nMetWoodsman,
+						 &nPassedWolf,
+						 &nRotated,
+						 &nHasBread,
+		                 &nHasFlower,
+						 &nRisk,
+						 &nMode,
+						 nSpeed,                   
+						 nGranny_y,   
+						 nGranny_x,
+						 nWolf_y,   
+						 nWolf_x,
+						 &nWoodsman_y,   
+		                 &nWoodsman_x,
+						 nHeight,           
+						 nWidth, 
+		                 &arrayMap,   
+						 &cRotation);
+        } while (!nFinished);
+        
+        return 0;
+}
+
+void 
+getInput (int *nWidth,
+          int *nHeight,
+		  int *nGranny_x,
+		  int *nGranny_y,
+		  int *nWolf_x,
+		  int *nWolf_y,
+		  int *nWoodsman_x,   
+		  int *nWoodsman_y,
+		  int *nSpeed,
+		  int *nMode,
+		  int *nRisk,
+		  char (*arrayMap)[MAX][MAX])
+{
+	    int i = 0, j = 0, 
+		    x = 17, y = 17,
+			n = 0;
+	    char cTemp[7],
+		     cTemp2[5];
+		
+		/*All these while loops will repeat while the input is invalid or outside the map*/
+		
+        while (!(isValid(cTemp)) || 
+		      !(*nWidth <= 15 && *nWidth >= MIN)) { 
+			    //8-15 Size range as instructued in FAQs
+		        //Get width input, repeat if invalid:
+                printf("Map Width: ");
+                fgets(cTemp, 4, stdin);
+                sscanf(cTemp, "%d", nWidth);
+        }
+        
+        while (!(isValid(cTemp)) || 
+		      !(*nHeight <= 15 && *nHeight >= MIN)) {
+		      	//8-15 Size range as instructued in FAQs
+		        //Get height input, repeat if invalid:
+                printf("Map Height: ");
+                fgets(cTemp, 4, stdin);
+                sscanf(cTemp, "%d", nHeight);
+        }
+        
+        //Print map sizes:
+        printf("Width: %d, Height: %d\n", *nWidth , *nHeight);
+                
+        for (i = 0; i < *nHeight; i++)
+                //Fill the map (array) with # as untracked field:
+                for (j = 0; j <= *nWidth; j++) {
+                        (*arrayMap)[i][j] = '#';
+                        (*arrayMap)[i][*nWidth] = '\n';
+                }
+		        
+        while (!(isValid(cTemp) && isValid(cTemp2)) || 
+		       !((*arrayMap)[*nGranny_y - 1][*nGranny_x - 1] == '#')) {
+		      	//Get granny's coordinates, repeat if invalid or outside the map:
+                printf("Granny's location (Format: x y): ");
+                fgets(cTemp2, 3, stdin);
+                fgets(cTemp, 7, stdin);
+                YCorrection(cTemp);
+                sscanf(cTemp2, "%d", nGranny_x);
+                sscanf(cTemp, "%d", nGranny_y);
+        }
+        
+        //Set granny's location in the map array:
+        (*arrayMap)[*nGranny_y - 1][*nGranny_x - 1] = 'g';
+        
+        while (!(isValid(cTemp) && isValid(cTemp2)) || 
+		       !((*arrayMap)[*nWolf_y - 1][*nWolf_x - 1] == '#')) {
+		      	//Get wolf's coordinates, repeat if invalid or outside the map:
+                printf("Wolf's location (Format: x y): ");
+                fgets(cTemp2, 3, stdin);
+                fgets(cTemp, 7, stdin);
+                YCorrection(cTemp);
+                sscanf(cTemp2, "%d", nWolf_x);
+                sscanf(cTemp, "%d", nWolf_y);
+        }
+        
+        //Set the wolf's location in the map array:
+        (*arrayMap)[*nWolf_y - 1][*nWolf_x - 1] = 'w';
+        
+        while (!(isValid(cTemp) && isValid(cTemp2)) || 
+		       !((*arrayMap)[*nWoodsman_y - 1][*nWoodsman_x - 1] == '#')) {
+		      	//Get woodsman's coordinates, repeat if invalid or outside the map:
+                printf("Woodsman's location (Format: x y): ");
+                fgets(cTemp2, 3, stdin);
+                fgets(cTemp, 7, stdin);
+                YCorrection(cTemp);
+                sscanf(cTemp2, "%d", nWoodsman_x);
+                sscanf(cTemp, "%d", nWoodsman_y);
+        }
+        
+        //Set the woodsman's location in the map array:
+        (*arrayMap)[*nWoodsman_y - 1][*nWoodsman_x - 1] = 'm';
+        
+        while (!(isValid(cTemp)) ||  
+		       !(n >= 1 && n <= 3)) {
+        	    //Get number of pits, repeat if invalid:
+                printf("Amount of pits (3 Maximum): ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &n);
+        }
+        
+        while (n != 0) {
+        	    y = 0;
+        	    x = 0;
+        	    while (!(isValid(cTemp) && isValid(cTemp2)) || 
+		               !((*arrayMap)[y - 1][x - 1] == '#')) {
+		            	//Get pit coordinates, repeat if invalid or outside the map:
+                        printf("Pit %d location (Format: x y): ", n);
+                        fgets(cTemp2, 3, stdin);
+                        fgets(cTemp, 7, stdin);
+                        YCorrection(cTemp);
+                        sscanf(cTemp2, "%d", &x);
+                        sscanf(cTemp, "%d", &y);
+                }
+                //Set the pit location in the map array:
+                if ((*arrayMap)[y - 1][x - 1] == '#') {
+                	            (*arrayMap)[y - 1][x - 1] = 'p';
+                                n--;
+                }
+		}
+		
+		while (!(isValid(cTemp)) ||  
+		       !(n >= 1 && n <= 3)) {
+        	    //Get number of flowers, repeat if invalid:
+                printf("Amount of flowers (3 Maximum): ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &n);
+        }
+        
+        while (n != 0) {
+        	    y = 0;
+        	    x = 0;
+        	    while (!(isValid(cTemp) && isValid(cTemp2)) || 
+		               !((*arrayMap)[y - 1][x - 1] == '#')) {
+		            	//Get flower coordinates, repeat if invalid or outside the map:
+                        printf("Flower %d location (Format: x y): ", n);
+                        fgets(cTemp2, 3, stdin);
+                        fgets(cTemp, 7, stdin);
+                        YCorrection(cTemp);
+                        sscanf(cTemp2, "%d", &x);
+                        sscanf(cTemp, "%d", &y);
+                }
+                //Set the flower location in the map array:
+                if ((*arrayMap)[y - 1][x - 1] == '#') {
+                	            (*arrayMap)[y - 1][x - 1] = 'f';
+                                n--;
+                }
+		}
+		
+		while (!(isValid(cTemp)) ||  
+		       !(n >= 1 && n <= 3)) {
+        	    //Get number of bakeries, repeat if invalid:
+                printf("Amount of bakeries (3 Maximum): ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &n);
+        }
+        
+        while (n != 0) {
+        	    y = 0;
+        	    x = 0;
+        	    while (!(isValid(cTemp) && isValid(cTemp2)) || 
+		               !((*arrayMap)[y - 1][x - 1] == '#')) {
+		            	//Get bakery coordinates, repeat if invalid or outside the map:
+                        printf("Bakery %d location (Format: x y): ", n);
+                        fgets(cTemp2, 3, stdin);
+                        fgets(cTemp, 7, stdin);
+                        YCorrection(cTemp);
+                        sscanf(cTemp2, "%d", &x);
+                        sscanf(cTemp, "%d", &y);
+                }
+                //Set the bakery location in the map array:
+                if ((*arrayMap)[y - 1][x - 1] == '#') {
+                	            (*arrayMap)[y - 1][x - 1] = 'b';
+                                n--;
+                }
+		}
+        
+        while (!(isValid(cTemp)) ||  
+		       !(*nRisk >= 1)) {
+        	    //Get risk, repeat if invalid:
+                printf("Risk (Frequency of sense, 1 is the lowest risk): ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", nRisk);
+                *nRisk += 1;
+        }
+        
+        while (!(isValid(cTemp)) || 
+		       !(*nMode == 1 || *nMode == 2)) {
+        	    //Get game mode, repeat if invalid:
+                printf("Game mode (1 - Manual, 2 - Automatic): ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", nMode);
+        }
+        
+        if (*nMode == 2) {
+               while (!(isValid(cTemp)) || 
+		              !(*nSpeed >= 1)) {
+        	           //Get game speed, repeat if invalid:
+                       printf("Game speed (1 is the fastest): ");
+                       fgets(cTemp, 3, stdin);
+                       sscanf(cTemp, "%d", nSpeed);
+               }
+        } else
+                printf("\nPress enter to proceed");
+}
+
+int 
+isValid (char strInput[]) 
+{
+        int nStringLength = stringLength(strInput), 
+		    i = 0;
+        
+        //Check if a string is valid, it should not cast anything else other than a number or space:
+        for (i = 0; i < nStringLength; i++)
+                if (strInput[i] > '0' && strInput[i] <= '9' && strInput[i] >= ' ')
+                        return 1; //True
+                        
+        return 0; //False
+}
+
+int
+stringLength (char strInput[]) 
+{
+        int nLength = 0, 
+		    i = 0;
+		
+		//Measure the string length without counting in nulls or newlines:
+        for(i = 0; strInput[i] != '\0' && strInput[i] != '\n'; i++)
+                nLength += 1;
+                
+        return nLength;
+}
+
+void 
+YCorrection (char *strInput) 
+{
+int i = 0, j = 0, x = 0;
+
+for (i = 0, j = stringLength(strInput); i < j; i++)
+        if (strInput[i] != ' ')
+                x++;
+        //Calculating for the index value of Y coordinate's correction
+        for (i = 0, j = i + x; i < 7; i++)
+                if (strInput[i] == ' ') {
+                        strInput[i] = strInput[j];
+                        strInput[j] = ' ';
+                }
+        //In the case that the Y coordinate is preceded by a space, the space should be negated by moving the number backwards in place of the former space
+        //Note: this is only for Y as X wouldn't have any problem with spaces
+        if (x == 2 && stringLength(strInput) == 3) {
+                int nTemp = strInput[0];
+                strInput[0] = strInput[1];
+                strInput[1] = nTemp;
+        } 
+		//Correction for the case that X and Y are 2 digit numbers by switching the second digit with the first digit with respect to the original number
+}
+
+void 
+gameCore (int   *nLRRH_y,          
+          int   *nLRRH_x,    
+		  int   *nRotations,       
+          int   *nDebounce,               
+		  int   *nRotateCooldown,   
+		  int   *nSenseCooldown,    
+		  int   *nSenses,                 
+		  int   *nActions,          
+		  int   *nFinished, 
+		  int   *nMetWoodsman,
+		  int   *nPassedWolf,
+		  int   *nRotated,
+		  int   *nHasBread,
+		  int   *nHasFlower,
+		  int   *nRisk,
+		  int   *nMode,
+		  int   nSpeed,                   
+		  int   nGranny_y,   
+		  int   nGranny_x,
+		  int   nWolf_y,   
+		  int   nWolf_x,
+		  int   *nWoodsman_y,   
+		  int   *nWoodsman_x,
+		  int   nHeight,           
+		  int   nWidth, 
+		  char  (*arrayMap)[MAX][MAX],   
+		  char   *cRotation)
+{
+	    //nTrack tracks LRRH's past coordinate for the woodsman's location, if she has met him:
+        int nTrack_x = *nLRRH_x, 
+		    nTrack_y = *nLRRH_y, 
+			x = 0, y = 0,
+			k = 0, l = 0;
+        char cReplace = ' ',
+		     s = ' ';
+        
+        //Initiate a delay according to mode and speed (if mode is automatic):
+        Delay (nSpeed, *nMode);
+        
+        //Check what's in front of LRRH if the tile in front of her has been tracked or sensed:
+        dangerAhead (nRotateCooldown,
+                     *nLRRH_y,
+			         *nLRRH_x,
+			         *arrayMap,
+			         *cRotation);
+        
+        if (*nLRRH_y >= nHeight - 1 && *cRotation != '<' && *cRotation != '^' && *cRotation != '>') {
+        	    /*Border check up until the 3rd else if statement, ensure that it only rotates to one direction*/
+        	    
+        	    //Initiate special debounce to track woodsman's location visually, if LRRH has met him:
+        	    if(*nMetWoodsman)
+        	            *nRotated = 3;
+        	            
+        	    //Set LRRH's direction based on what side of the border she is at:
+                *cRotation = '<';
+                //Add 1 to rotations accumulated:
+                *nRotations += 1;
+                //Set debounce to true:
+                *nDebounce += 1;
+                //Rotate cooldown cannot have an equal minimum as the map's minimum size as LRRH may infinitely circle in an 8x8 map:
+                *nRotateCooldown = (rand() % (8 - 2)) + 2;
+                
+        } else if (*nLRRH_y <= 0 && *cRotation != '>' && *cRotation != 'V' && *cRotation != '<') {
+        	    if(*nMetWoodsman)
+        	            *nRotated = 3;
+        	            
+                *cRotation = '>';
+                *nRotations += 1;
+                *nDebounce += 1;
+                *nRotateCooldown = (rand() % (8 - 2)) + 2;
+                
+        } else if (*nLRRH_x >= nWidth - 1 && *cRotation != 'V' &&*cRotation != '<' && *cRotation != '^') {
+        	    if(*nMetWoodsman)
+        	            *nRotated = 3;
+        	            
+                *cRotation = 'V';
+                *nRotations += 1;
+                *nDebounce += 1;
+                *nRotateCooldown = (rand() % (8 - 2)) + 2;
+                
+        } else if (*nLRRH_x <= 0 && *cRotation != '^' && *cRotation != '>' && *cRotation != 'V') {
+        	    if(*nMetWoodsman)
+        	            *nRotated = 3;
+        	            
+                *cRotation = '^';
+                *nRotations += 1;
+                *nDebounce += 1;
+                *nRotateCooldown = (rand() % (8 - 2)) + 2;
+                
+        } else if (*nRotateCooldown == 0) {
+        	    if(*nMetWoodsman)
+        	            *nRotated = 3;
+        	    
+        	    //Initiated rotate action:
+                rotateAction(nRotateCooldown,
+                             nDebounce,
+			                 nRotations,
+			                 cRotation);
+		} else if (*nSenseCooldown == 0) {
+        	    //Initiate sense action:
+                s = senseAction (*nLRRH_y, 
+				                 *nLRRH_x, 
+				                 *nRotations,  
+				                 *nSenseCooldown, 
+								 *nSenses, 
+				                 *arrayMap, 
+								 *cRotation,
+								 &cReplace);
+							
+				//Sense only if the tile in front of LRRH hasn't been sensed:	
+				if (s != ' ') {
+					    switch(*cRotation) {
+                                case 'V':
+                                y++;
+                                break;
+                        case '^':
+                                y--;
+                                break;
+                        case '>': 
+                                x++;
+                                break;
+                        case '<':
+                                x--;
+                                break;
+                        }
+                        
+                        //Reset sense cooldown based on risk, add 1 to amoount of senses, set debounce to true:
+				        *nSenseCooldown += *nRisk;
+                        *nSenses += 1;
+                        *nDebounce += 1;
+                        
+                        if (s == 'l' ||
+						    s == 'h' ||
+							s == 'c' ||
+							s == 's')
+						        //We need to avoid rotating in front of the good objects:
+                                *nRotateCooldown += 1;
+
+                        (*arrayMap)[*nLRRH_y + y][*nLRRH_x + x] = cReplace;      
+				} else
+				        //Set or add 1 to sense cooldown while an untracked tile isn't in front of LRRH.
+				        *nSenseCooldown += 1;
+        }
+        
+        if (!(*nDebounce)) {
+        	    //Check which direction LRRH is facing to determine where to move.
+                switch (*cRotation) {
+                        case 'V':
+                                l += 1;
+                                y -= 1;
+                                break;
+                        case '^':
+                                l -= 1;
+                                y += 1;
+                                break;
+                        case '>': 
+                                k += 1;
+                                x -= 1;
+                                break;
+                        case '<':
+                                k -= 1;
+                                x += 1;
+                                break;
+                }
+                        /*Since LRRH is bound to move forward, if the 
+						  object in front of her is a pit, the finished
+						  statues shall be set to defeat*/
+						//Note: We cannot utilize "pit coordinates" as we don't have it:
+                        if ((*arrayMap)[*nLRRH_y + l][*nLRRH_x + k] == 'p')
+		                        *nFinished = 3;
+                        
+                        //If LRRH is bound to move into a bakery, set nHasBread to true:
+                        if ((*arrayMap)[*nLRRH_y + l][*nLRRH_x + k] == 'b' ||
+						    (*arrayMap)[*nLRRH_y + l][*nLRRH_x + k] == 'B') 
+		                        *nHasBread = 1;
+		                        
+		                //If LRRH is bound to move into a flower, set nHasFlower to true:    
+		                if ((*arrayMap)[*nLRRH_y + l][*nLRRH_x + k] == 'f' ||
+						    (*arrayMap)[*nLRRH_y + l][*nLRRH_x + k] == 'F')
+		                        *nHasFlower = 1;
+                        
+                        //Update LRRH's coordinates
+                        *nLRRH_y += l;
+                        *nLRRH_x += k;
+                        
+                
+                        if (*nMetWoodsman) {
+                	            if (*nRotated)
+                	                    if (!(*nWoodsman_y == nWolf_y - 1 && *nWoodsman_x == nWolf_x - 1))
+                	                            //Ensure that M doesn't duplicate if LRRH rotated:
+                	                            (*arrayMap)[*nWoodsman_y][*nWoodsman_x] = '_';
+                	                            
+                	            //Update woodsman's coordinated if LRRH has met him, he stays behind LRRH:
+				                *nWoodsman_y = nTrack_y;
+                                *nWoodsman_x = nTrack_x;
+                         
+                                if (!*nRotated)
+                                        if (!(*nWoodsman_y == nWolf_y - 1 && *nWoodsman_x == nWolf_x - 1))
+                                                //Ensure that M doesn't duplicate if LRRH moved forward:
+                                                (*arrayMap)[*nWoodsman_y + y][*nWoodsman_x + x] = '_';
+                        }  else
+                                if (!(*nLRRH_y == nWolf_y - 1 && *nLRRH_x == nWolf_x - 1))
+                                        (*arrayMap)[*nLRRH_y + y][*nLRRH_x + x] = '_';
+                        
+                        //Add 1 to amount of forwards.
+                        *nActions += 1;
+        }
+        
+        //Woodsman location stays static while LRRH hasn't met him:
+        if (!*nMetWoodsman)
+                (*arrayMap)[*nWoodsman_y - 1][*nWoodsman_x - 1] = 'm';
+        //Once LRRH has met the woodsman, this will temporarily merge them visually:
+        else if (*nLRRH_y == *nWoodsman_y - 1 && *nLRRH_x == *nWoodsman_x - 1) {
+                *nWoodsman_y = nTrack_y;
+                *nWoodsman_x = nTrack_x;
+        } else if (!(*nWoodsman_y == nWolf_y - 1 && *nWoodsman_x == nWolf_x - 1))
+                //Update woodsman's location graphically:
+                (*arrayMap)[*nWoodsman_y][*nWoodsman_x] = 'M';
+        
+        //Update current direction LRRH is facing:
+        (*arrayMap)[*nLRRH_y][*nLRRH_x] = *cRotation;
+        
+        //Check if LRRH is at the same location as the woodsman:
+        if (*nLRRH_y == *nWoodsman_y - 1 && *nLRRH_x == *nWoodsman_x - 1)
+		        *nMetWoodsman = 1;
+        
+        //Check game over conditions if met:
+        if (*nLRRH_y == nGranny_y - 1 && *nLRRH_x == nGranny_x - 1) {
+        	    //If LRRH reached granny:
+                if (*nHasBread && *nHasFlower && *nMetWoodsman)
+                        //Set finished status to victory if all needed conditions are met:
+		                *nFinished = 1;
+		        else
+		                //Set finished status to defeat otherwise:
+		                *nFinished = 4;
+	    } else if (*nLRRH_y == nWolf_y - 1 && *nLRRH_x == nWolf_x - 1) {
+	            //If LRRH met the wolf:
+	            if(*nHasBread) {
+	                    //The wolf will take LRRH's bread and let her go:
+	                    if (*nRotateCooldown > 1) {
+	                    	    *nPassedWolf = 1;
+	                            *nHasBread -= 1;
+	                            (*arrayMap)[*nLRRH_y + y][*nLRRH_x + x] = '_';
+	                    }
+	            } else if (!*nPassedWolf) {
+	                    //Set finished status to defeat if LRRH didn't have bread:
+		                *nFinished = 2;
+		                (*arrayMap)[*nLRRH_y + y][*nLRRH_x + x] = '_';
+		        }
+		}
+		
+		if(*nPassedWolf)
+		        //Make sure that the wolf stays in the map given bread:
+		        (*arrayMap)[nWolf_y - 1][nWolf_x - 1] = 'W';
+		
+		//Indent the map downwards:
+        refreshFrame ();
+        
+        printf("Capitalized letters mean LRRH has already sensed that object\n");
+        printf("------------------------------------------------------------\n");
+        printf("Legend: Gg: Granny | Ww: Wolf | Mm: Woodsman | Pp: Pit\n");
+        printf("      #: Untracked | b: Bakery|  f: Flower   |  _: Tracked\n");
+        printf("Bread: %d | Flower: %d | Woodsman (1 - Met, 2 - Behind LRRH): %d \n", *nHasBread, *nHasFlower, *nMetWoodsman);
+        
+        //Print updated map:
+        for (y = 0; y < nHeight; y++)
+                for(x = 0; x <= nWidth; x++)
+                        printf(" %c", (*arrayMap)[y][x]);
+                        
+        printf("\nForwards: %d, Rotations: %d | Senses: %d ", *nActions, *nRotations, *nSenses);
+        
+        //Print an effect according to senseAction's return value:
+        switch (s) {
+        	    case 'l':
+        	    	    printf("(Light)");
+        	    	    break;
+        	    case 'h':
+        	    	    printf("(Heat)");
+        	    	    break;
+        	    case 'c':
+        	    	    printf("(Scent)");
+        	    	    break;
+        	    case 's':
+        	    	    printf("(Sound)");
+        	    	    break;
+        	    case 'H':
+        	    	    printf("(Howl)");
+        	    	    break;
+        	    case 'b':
+        	    	    printf("(Breeze)");
+        	    	    break;
+        	    case 'n':
+        	    	    printf("(None)");
+        	    	    break;
+		}
+        
+        printf("\nCooldowns: Rotations = %d | Senses = %d", *nRotateCooldown, *nSenseCooldown);
+        
+        //Indicate how many steps away granny is (only once) if she meets the woodsman:
+        if(*nMetWoodsman == 1) {
+        	    l = *nLRRH_y - nGranny_y;
+        	    if(l < 0)
+        	            l = -l;
+        	            
+        	    k += *nLRRH_x - nGranny_x;
+        	    if (k < 0)
+        	            k = -k;
+        	            
+        	    printf("\nGranny is %d steps away...", (l + k));
+        	    
+        	    *nMetWoodsman += 1;
+		}
+		
+		//Print finish status if the game is finished:
+		switch (*nFinished) {
+                case 1:
+                        printf("\nLittle Red Riding Hood reached Granny successfully!");
+                        break;
+                case 2:
+                	    printf("\nLittle Red Riding Hood has been eaten by the wolf!");
+                        break;
+                case 3:
+                	    printf("\nLittle Red Riding Hood has fallen into a pit!");
+                	    break;
+                case 4:
+                        printf("\nLittle Red Riding Hood didn't have both bread and flowers...");
+                        printf("\nOr perhaps the woodsman to protect her on the way...");
+                        printf("\nAnd the Big Bad Wolf followed her to granny and ate them!");
+                	    break;
+		}
+        
+        if (*nSenseCooldown == *nRisk) {
+        	    //Indent the map to center it, special case for if the eye is displayed:
+                displayEye();
+                centerFrame2();
+        } else
+                //Indent the map to center it:
+                centerFrame();
+         
+		//Deduct rotate cooldown:  
+        if (*nRotateCooldown > 0)
+                *nRotateCooldown -= 1;
+        
+		//Deduct sense cooldown:    
+        if (*nSenseCooldown > 0)
+                *nSenseCooldown -= 1;
+        
+		//Set debounce to 0:       
+        *nDebounce = 0;
+        
+        //Deduct special rotation debounce:
+        if (*nRotated > 0)
+                *nRotated -= 1;
+}
+
+void
+Delay (int nSpeed, int nMode) 
+{
+        int i = 0, j = 0;
+        char cEnter = 'a';
+        
+        if(nMode == 1)
+                //Delay is dependent on how fast the user presses enter if mode 1:
+        	    while (cEnter != '\n')
+        	            scanf("%c", &cEnter);
+		else
+		        //Delay is dependent on speed input if mode 2:
+                for(i = 0; i < nSpeed * 2000; i++)
+                        for(j = 0; j < i; j++);
+}
+
+void 
+refreshFrame () 
+{
+        int i = 0;
+        
+        //Print 40 new lines to push the updated map downwards:
+        for (i = 0; i < 40; i++)
+                printf("\n");
+}
+
+void 
+centerFrame () 
+{
+        int i = 0;
+        
+        //Print 25 new lines to push and center the updated map upwards:
+        for (i = 0; i < 25; i++)
+                printf("\n");
+}
+
+void 
+centerFrame2 () 
+{
+        int i = 0;
+        
+        //Print only 5 lines if eye is displayed, to move the updated map upwards:
+        for (i = 0; i < 5; i++)
+                printf("\n");
+}
+
+void 
+displayEye () 
+{
+        printf("\n\n\n\n                .........................\n");
+        printf("           ,.',.,,;,.','mmmMMMMMMmmmmmmm;....\n");
+        printf("          ...,',.,'';mmmmmMMMMMMMMMMmmmmmmmp;....\n");
+        printf("      ,,.;,;,.;,;mmmmMMMMMMMMMMMMMMMMMMmqpqmqoqpq:,.\n");
+        printf("   ,,.;,;;,.;opqommmmmmmmmmmmMM MMMMMMmmmmmqmpqpqpqp.\n");
+        printf(" .,.,,;,.,;mmmpq   mmmMMMMMMMMM  Mmm..':qqmpqpqmqppqpqpm,\n");
+        printf(" ,.,.,..mpq.    .mMMMMmm. .mMMMMMMmm.  ..';qmpqppqqqqqmpqp.\n");
+        printf(";.;.;;qppq.     ..mmMMmm.   .mmMMMm..      ,mqpqpqmqpmqp:.\n");
+        printf("....ooo.        .mmmMMMMMMMMMMMmmmm.      mmpqpqmqmqp:,.'\n");
+        printf("'..;mmmp;'         .mmmMMMMMM  mmm.      .;mmmpqqpmo;,.,'\n");
+        printf("  ..;mmmmpq:,..       'mmMMMMMMmm,   ..'mpqmpqq,.;,.;,.\n");
+        printf("   .;'.'mpqpqmq;..;'mmpqwq..';'',mmmpqpqo,.',.,;,'.,,.\n");
+        printf("   .,.'.',,,,,,;;mmmMMMMMMMMMMMMMMMMMMmmm:::;,'..\n");
+        printf("      .,'.,'''.,.;;;mmmMMMMMMMMMMMmmmm:::;;;,,''...\n");
+        printf("       ,.,;.,.;,',',.;,'.;',.;',.;',;.',,'','.\n");
+        printf("            .....................;,;.',.;'''\n");
+}
+
+char 
+senseAction (int   nLRRH_y, 
+             int   nLRRH_x, 
+			 int   nRotations, 
+			 int   nSenseCooldown, 
+			 int   nSenses, 
+			 char  (arrayMap)[MAX][MAX], 
+			 char  cRotation,
+			 char  *cReplace) {
+				
+	    int x = 0, y = 0;
+	    
+	    //Determine the direction LRRH is facing:
+        switch (cRotation) {
+                case 'V':
+                        y++;
+                        break;
+                case '^':
+                        y--;
+                        break;
+                case '>': 
+                        x++;
+                        break;
+                case '<':
+                        x--;
+                        break;
+        }
+        
+        //Check the tile in front of LRRH, return a space if it has already been sensed or tracked:
+        switch ((arrayMap)[nLRRH_y + y][nLRRH_x + x]) {
+                case 'w':
+                	    //Wolf
+                	    *cReplace = 'W';
+                        return 'H';
+                        break;
+                case 'p':
+                	    //Pit
+                	    *cReplace = 'P';
+                        return 'b';
+                        break;
+                case 'b':
+                	    //Bakery
+                	    *cReplace = 'b';
+                        return 'h';
+                        break;
+                case 'm':
+                	    //Woodsman
+                	    *cReplace = 'M';
+                        return 's';
+                        break;
+                case 'f':
+                	    //Flower
+                	    *cReplace = 'F';
+                        return 'c';
+                        break;
+                case '#':
+                	    //Untracked blank tile
+                	    *cReplace = '_';
+                        return 'n';
+                        break;
+                case 'g':
+                	    //Granny
+                	    *cReplace = 'G';
+                        return 'l';
+                        break;
+                }
+                
+        return ' '; //Default for tracked field
+}
+
+void
+rotateAction (int   *nRotateCooldown,
+              int   *nDebounce,
+			  int   *nRotations,
+			  char   *cRotation)
+{
+	    //LRRH only rotates clockwise as instructed
+	    //Check which direction LRRH is current facing and rotate her accordingly:
+	    switch (*cRotation) {
+	    	    case '>':
+	    	    	    *cRotation = 'V';
+	    	    	    break;
+	    	    case 'V':
+	    	    	    *cRotation = '<';
+	    	    	    break;
+	    	    case '<':
+	    	    	    *cRotation = '^';
+	    	    	    break;
+	    	    case '^':
+	    	    	    *cRotation = '>';
+	    	    	    break;
+		}
+        
+		//Reset rotate cooldown, set debounce to true, add 1 to amount of rotations: 
+        *nRotateCooldown = (rand() % (13 - 8)) + 8;
+        *nDebounce += 1;
+        *nRotations += 1;
+}
+
+void
+dangerAhead (int   *nRotateCooldown,
+             int   nLRRH_y,
+			 int   nLRRH_x,
+			 char  (arrayMap)[MAX][MAX],
+			 char  cRotation)
+{       
+        int x = 0, y = 0;
+        
+        //Check which direction LRRH is facing:
+        switch (cRotation) {
+                        case 'V':
+                                y += 1;
+                                break;
+                        case '^':
+                                y -= 1;
+                                break;
+                        case '>': 
+                                x += 1;
+                                break;
+                        case '<':
+                                x -= 1;
+                                break;
+        }
+        
+        //Initiate a rotate if an already sensed wolf or pit is in front of LRRH:
+        if ((arrayMap)[nLRRH_y + y][nLRRH_x + x] == 'W' || 
+	 	    (arrayMap)[nLRRH_y + y][nLRRH_x + x] == 'P')
+                *nRotateCooldown = 0;
+}
