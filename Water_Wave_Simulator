@@ -1,0 +1,349 @@
+//Note: Automatic (mode 2) does not work properly with some compilers: Replit
+//3.5 Momentum and 6 Amplitude is arguably the best
+#include <stdio.h>
+
+#define MAXy 15
+#define MAXx 19
+
+struct Particle {
+        float fMomentum;
+        int y, x, k;
+        int bUp, bDown, bIncrement;
+        struct Particle* next;
+};
+
+void 
+Delay (int nSpeed, 
+       int nMode);
+
+int
+isValid (char strInput[]);
+
+int
+stringLength (char strInput[]);
+
+void
+refreshFrame();
+
+void 
+centerFrame();
+
+void 
+updateParticles (struct Particle* n, 
+                 char (*arrayArea)[MAXy][MAXx],
+                 int nAmplitude);
+
+static unsigned char our_memory[1024 * 1024]; //reserve 1 MB for allocate
+static size_t next_index = 0;
+
+void 
+*allocate (size_t sz);
+
+int main() {
+        char cTemp[6], arrayArea[MAXy][MAXx];
+        int nSpeed = 0, nMode = 0, nAmplitude = 0, forever = 1,
+            x = 0, y = 0, i = 0, j = 0, nTemp = 0, bChange = 0, 
+            bStable = 0, bStaticHeight = 0;
+        float fInitialMomentum = 0, fTemp = 0;
+         
+        struct Particle* one = allocate(sizeof(struct Particle));
+        struct Particle* two = allocate(sizeof(struct Particle));
+        struct Particle* three = allocate(sizeof(struct Particle));
+        struct Particle* four = allocate(sizeof(struct Particle));
+        struct Particle* five = allocate(sizeof(struct Particle));
+        struct Particle* six = allocate(sizeof(struct Particle));
+        struct Particle* seven = allocate(sizeof(struct Particle));
+        struct Particle* eight = allocate(sizeof(struct Particle));
+        struct Particle* nine = allocate(sizeof(struct Particle));
+        struct Particle* ten = allocate(sizeof(struct Particle));
+        struct Particle* eleven = allocate(sizeof(struct Particle));
+        struct Particle* twelve = allocate(sizeof(struct Particle));
+        struct Particle* thirteen = allocate(sizeof(struct Particle));
+        struct Particle* fourteen = allocate(sizeof(struct Particle));
+        struct Particle* fifteen = allocate(sizeof(struct Particle));
+        struct Particle* sixteen = allocate(sizeof(struct Particle));
+        struct Particle* seventeen = allocate(sizeof(struct Particle));
+        struct Particle* eighteen = allocate(sizeof(struct Particle));
+        struct Particle* nineteen = allocate(sizeof(struct Particle));
+
+        one->bDown = 1; //Initialize
+  
+        one->x = 0;       one->y = 0;       one->next = two;
+        two->x = 1;       two->y = 0;       two->next = three; 
+        three->x = 2;     three->y = 0;     three->next = four;
+        four->x = 3;      four->y = 0;      four->next = five;
+        five->x = 4;      five->y = 0;      five->next = six;
+        six->x = 5;       six->y = 0;       six->next = seven;
+        seven->x = 6;     seven->y = 0;     seven->next = eight;
+        eight->x = 7;     eight->y = 0;     eight->next = nine;
+        nine->x = 8;      nine->y = 0;      nine->next = ten;
+        ten->x = 9;       ten->y = 0;       ten->next = eleven;
+        eleven->x = 10;   eleven->y = 0;    eleven->next = twelve;
+        twelve->x = 11;   twelve->y = 0;    twelve->next = thirteen;
+        thirteen->x = 12; thirteen->y = 0;  thirteen->next = fourteen;
+        fourteen->x = 13; fourteen->y = 0;  fourteen->next = fifteen;
+        fifteen->x = 14;  fifteen->y = 0;   fifteen->next = sixteen;
+        sixteen->x = 15;   sixteen->y = 0;   sixteen->next = seventeen;
+        seventeen->x = 16; seventeen->y = 0; seventeen->next = eighteen;
+        eighteen->x = 17;  eighteen->y = 0;  eighteen->next = nineteen;
+        nineteen->x = 18;  nineteen->y = 0;  nineteen->next = NULL;
+
+        while(!(isValid(cTemp)) ||
+              !(fInitialMomentum >= 1)) {
+                printf("Initial momentum: ");
+                fgets(cTemp, 6, stdin);
+                sscanf(cTemp, "%f", &fInitialMomentum);
+        }
+        while(!(isValid(cTemp)) ||
+              !(nAmplitude >= 1)) {
+                printf("Amplitude: ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &nAmplitude);
+        }
+        while(!(isValid(cTemp)) ||
+              !(bStable == 1 || bStable == 2)) {
+                printf("Stable amplitude: ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &bStable);
+        }
+        while(!(isValid(cTemp)) ||
+              !(bStaticHeight == 1 || bStaticHeight == 2)) {
+                printf("Static height: ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &bStaticHeight);
+        }
+        while(!(isValid(cTemp)) ||
+              !(nMode == 1 || nMode == 2)) {
+                printf("Mode: ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &nMode);
+        }
+        if(nMode == 2)
+                while(!(isValid(cTemp)) ||
+                      !(nSpeed >= 1)) {
+                        printf("Speed: ");
+                        fgets(cTemp, 3, stdin);
+                        sscanf(cTemp, "%d", &nSpeed);
+                }
+
+        fTemp = fInitialMomentum;
+        nTemp = nAmplitude;
+  
+        while(forever) {
+                i = 0;
+                struct Particle* n = one;
+                struct Particle* f = one;
+          
+                Delay(nSpeed, nMode);
+                updateParticles (one, 
+                                 &arrayArea,
+                                 nAmplitude);
+
+                while (n != NULL) {
+                        if(n->y >= nAmplitude &&
+                           !(n->bIncrement)){
+                                      //n->next->bUp = 0; 
+                                      //n->next->bDown = 1;
+                                n->fMomentum = 0;
+                                n->bUp = 1; 
+                                n->bDown = 0;
+                               }
+                        else if((n->y == n->k) &&
+                                !(n->bIncrement)) {
+                                      //n->next->bUp = 0; 
+                                      //n->next->bDown = 1;
+                                n->fMomentum = 0;
+                                n->bUp = 0; 
+                                n->bDown = 1;
+                               }
+                               
+                        if(n->fMomentum <= 0)
+                                n->bIncrement = 1;
+                        if(n->fMomentum > fTemp) 
+                                n->bIncrement = 0;
+                        if(n->bIncrement)
+                                n->fMomentum += 0.25;
+                        else if(n->bUp) {
+                                if(n->y != 0) //Experiment on this
+                                        n->y--;
+                                n->fMomentum -= 0.25;
+                        }
+                        else if(n->bDown) {
+                                n->y++;
+                                n->fMomentum -= 0.25;
+                        }
+                        if(n->next != NULL) 
+                                n->next->fMomentum = n->fMomentum * 1.243;
+                  
+                        if(bStable == 2) {
+                                if(one->bUp && !bChange)
+                                        bChange = 1;
+                                if(bChange == 1) {
+                                        nAmplitude++;
+                                        bChange = 2;
+                                }
+                                if(bChange == 2 && one->bDown ||
+                                   nAmplitude == nTemp)
+                                        bChange = 0;
+                                if(bChange == 3)
+                                        nAmplitude--;
+                                if(nAmplitude > nTemp + 2) 
+                                        bChange = 3;
+                        }
+
+                        if(bStaticHeight == 2)
+                                if(n->bDown)
+                                        n->k = nAmplitude - nTemp;
+                        //Cannot be n->bUp since it can do the operation while the particle is visually above k which is our new y, this will freeze the particle
+                        
+                  
+                        n = n->next;
+        }
+                
+                refreshFrame();
+                for(y = 0; y < MAXy; y++) {
+                        printf("||");
+                        for(x = 0; x < MAXx; x++)
+                                printf("%c", arrayArea[y][x]);
+                        printf("||\n");
+                }
+                printf("=======================\n\n");
+                while(f != NULL) {
+                        printf("%f ", f->fMomentum);
+                        if(i == 4 || i == 9 || i == 14)
+                                printf("\n");
+                        f = f->next;
+                        i++;
+                }
+                printf("\nAmplitude: %d", nAmplitude);
+                centerFrame(); 
+
+                if(fTemp > -30)
+                        fTemp -= fInitialMomentum / 2;
+        }
+
+        return 0;
+}
+
+void
+Delay (int nSpeed, 
+       int nMode) 
+{
+        int i = 0, j = 0;
+        char cEnter = 'a';
+        
+        if(nMode == 1)
+                //Delay is dependent on how fast the user presses enter if mode 1:
+        	    while (cEnter != '\n')
+                      switch(i) {
+                              case 0:
+                              case 1:
+                                      scanf("%c", &cEnter);
+                                      i++; 
+                                      //Avoid  endlessly scanning the newlines of momentum display by condition using i
+                                      break;
+                              case 2:
+                                      scanf("%c", &cEnter);
+                                      break;
+                      }
+        else
+		        //Delay is dependent on speed input if mode 2:
+                for(i = 0; i < nSpeed * 2000; i++)
+                        for(j = 0; j < i; j++);
+}
+
+int 
+isValid (char strInput[]) 
+{
+        int nStringLength = stringLength(strInput), 
+		    i = 0;
+        
+        //Check if a string is valid, it should not cast anything else other than a number or space:
+        for (i = 0; i < nStringLength; i++)
+                if (strInput[i] > '0' && strInput[i] <= '9' && strInput[i] >= ' ')
+                        return 1; //True
+                        
+        return 0; //False
+}
+
+int
+stringLength (char strInput[]) 
+{
+        int nLength = 0, 
+		    i = 0;
+		
+		    //Measure the string length without counting in nulls or newlines:
+        for(i = 0; strInput[i] != '\0' && strInput[i] != '\n'; i++)
+                nLength += 1;
+                
+        return nLength;
+}
+
+void 
+refreshFrame () 
+{
+        int i = 0;
+        
+        //Print 40 new lines to push the updated display downwards:
+        for (i = 0; i < 40; i++)
+                printf("\n");
+}
+
+void 
+centerFrame () 
+{
+        int i = 0;
+        
+        //Print 25 new lines to push and center the updated display upwards:
+        for (i = 0; i < 5; i++)
+                printf("\n");
+}
+
+void 
+updateParticles (struct Particle* n, 
+                 char (*arrayArea)[MAXy][MAXx],
+                 int nAmplitude)
+{
+        int x = 0, y = 0, j = 0, bSplash = 0;
+        while (n != NULL) {
+                for (y = 0; y < nAmplitude; y++)
+                        for (x = 0; x < MAXx; x++) {
+                                if(n->x == x &&
+                                   n->y == y) {
+                                        if(n->bDown) {
+                                                (*arrayArea)[y - 1][x] = ' ';
+                                                (*arrayArea)[y][x] = 'v';
+                                        }
+                                        else if(n->bUp) {
+                                                (*arrayArea)[y + 1][x] = '#';
+                                                (*arrayArea)[y][x] = '^';
+                                                if((*arrayArea)[y + 1][x + 1] == ' ' &&
+                                                   (*arrayArea)[y + 1][x - 1] == ' ')
+                                                        (*arrayArea)[y + 1][x] = ' ';
+                                        }
+                                }
+                                else if((*arrayArea)[y][x] != 'v' &&
+                                        (*arrayArea)[y][x] != '^' &&
+                                        (*arrayArea)[y][x] != '&' &&
+                                        (*arrayArea)[y][x] != ' ')
+                                        (*arrayArea)[y][x] = '#';
+                        }
+                for (y = nAmplitude; y <= MAXy; y++)
+                        for (x = 0; x < MAXx; x++) 
+                                (*arrayArea)[y][x] = '#';
+                n = n->next;
+        }
+}
+
+void *allocate(size_t sz)
+{
+        void *mem;
+
+        if(sizeof our_memory - next_index < sz)
+                return NULL;
+
+        mem = &our_memory[next_index];
+        next_index += sz;
+  
+        return mem;
+}
