@@ -1,0 +1,330 @@
+//Note: Automatic (mode 2) does not work properly with some compilers: Replit
+//3.5 Momentum and 6 Amplitude is arguably the best
+#include <stdio.h>
+
+#define MAXy 15
+#define MAXx 19
+
+struct Particle {
+        float fMomentum;
+        int y, x, k;
+        int bUp, bDown, bIncrement;
+};
+
+void 
+Delay (int nSpeed, 
+       int nMode);
+
+int
+isValid (char strInput[]);
+
+int
+stringLength (char strInput[]);
+
+void
+refreshFrame();
+
+void 
+centerFrame();
+
+void 
+updateParticles (struct Particle* n, 
+                 char arrayArea[MAXy][MAXx],
+                 int nAmplitude);
+
+static unsigned char our_memory[1024 * 1024]; //reserve 1 MB for allocate
+static size_t next_index = 0;
+
+void 
+*allocate (size_t sz);
+
+int main() {
+        char cTemp[6], arrayArea[MAXy][MAXx];
+        int nSpeed = 0, nMode = 0, nAmplitude = 0, forever = 1,
+            x = 0, y = 0, i = 0, j = 0, f = 0, nTemp = 0, bChange = 0, 
+            bStable = 0, bStaticHeight = 0;
+        float fInitialMomentum = 0, fTemp = 0, fMemory[19][7];
+        
+        struct Particle P[19];
+
+        P[0].bDown = 1; //Initialize
+  
+        P[0].x = 0;       P[0].y = 0;
+        P[1].x = 1;       P[1].y = 0;
+        P[2].x = 2;       P[2].y = 0;
+        P[3].x = 3;       P[3].y = 0;
+        P[4].x = 4;       P[4].y = 0;
+        P[5].x = 5;       P[5].y = 0;
+        P[6].x = 6;       P[6].y = 0;
+        P[7].x = 7;       P[7].y = 0;
+        P[8].x = 8;       P[8].y = 0;
+        P[9].x = 9;       P[9].y = 0;
+        P[10].x = 10;     P[10].y = 0;
+        P[11].x = 11;     P[11].y = 0;
+        P[12].x = 12;     P[12].y = 0;
+        P[13].x = 13;     P[13].y = 0;
+        P[14].x = 14;     P[14].y = 0;
+        P[15].x = 15;     P[15].y = 0;
+        P[16].x = 16;     P[16].y = 0;
+        P[17].x = 17;     P[17].y = 0;
+        P[18].x = 18;     P[18].y = 0;
+
+        while(!(isValid(cTemp)) ||
+              !(fInitialMomentum >= 1)) {
+                printf("Initial momentum: ");
+                fgets(cTemp, 6, stdin);
+                sscanf(cTemp, "%f", &fInitialMomentum);
+        }
+        while(!(isValid(cTemp)) ||
+              !(nAmplitude >= 1)) {
+                printf("Amplitude: ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &nAmplitude);
+        }
+        while(!(isValid(cTemp)) ||
+              !(bStable == 1 || bStable == 2)) {
+                printf("Stable amplitude\n(1 = Yes | 2 = No): ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &bStable);
+        }
+        while(!(isValid(cTemp)) ||
+              !(bStaticHeight == 1 || bStaticHeight == 2)) {
+                printf("Static height\n(1 = Yes | 2 = No): ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &bStaticHeight);
+        }
+        while(!(isValid(cTemp)) ||
+              !(nMode == 1 || nMode == 2)) {
+                printf("Mode\n(1 = Manual | 2 = Automatic): ");
+                fgets(cTemp, 3, stdin);
+                sscanf(cTemp, "%d", &nMode);
+        }
+        if(nMode == 2)
+                while(!(isValid(cTemp)) ||
+                      !(nSpeed >= 1)) {
+                        printf("Speed: ");
+                        fgets(cTemp, 3, stdin);
+                        sscanf(cTemp, "%d", &nSpeed);
+                }
+        else
+                printf("\nPress enter repeatedly to continue the motion of the wave");
+
+        while (i < 19) {
+                if (i != 18) 
+                        P[i].fMomentum = 0.25;
+                P[i].bDown = 1;
+                P[i].k = 0;
+                P[i].bUp = 0; 
+                P[i].bDown = 1;
+                P[i].bIncrement = 0;
+                i++;
+        }
+
+        fTemp = fInitialMomentum;
+        nTemp = nAmplitude;
+  
+        while (forever) {
+                i = 0;
+                f = 0;
+          
+                Delay(nSpeed, nMode);
+                updateParticles (P, 
+                                 arrayArea,
+                                 nAmplitude);
+
+                while (i < 19) {
+                        if(P[i].y >= nAmplitude &&
+                           !(P[i].bIncrement)){
+                                      //n->next->bUp = 0; 
+                                      //n->next->bDown = 1;
+                                P[i].fMomentum = 0;
+                                P[i].bUp = 1; 
+                                P[i].bDown = 0;
+                               }
+                        else if((P[i].y == P[i].k) &&
+                                !(P[i].bIncrement)) {
+                                      //n->next->bUp = 0; 
+                                      //n->next->bDown = 1;
+                                P[i].fMomentum = 0;
+                                P[i].bUp = 0; 
+                                P[i].bDown = 1;
+                               }
+                               
+                        if(P[i].fMomentum <= 0)
+                                P[i].bIncrement = 1;
+                        if(P[i].fMomentum > fTemp) 
+                                P[i].bIncrement = 0;
+                        if(P[i].bIncrement)
+                                P[i].fMomentum += 0.25;
+                        else if(P[i].bUp) {
+                                if(P[i].y != 0) //Experiment on this
+                                        P[i].y--;
+                                P[i].fMomentum -= 0.25;
+                        }
+                        else if(P[i].bDown) {
+                                P[i].y++;
+                                P[i].fMomentum -= 0.25;
+                        }
+                        if(i + 1 != 19) 
+                                P[i + 1].fMomentum = P[i].fMomentum * 1.243;
+                  
+                        if(bStable == 2) {
+                                if(P[0].bUp && !bChange)
+                                        bChange = 1;
+                                if(bChange == 1) {
+                                        nAmplitude++;
+                                        bChange = 2;
+                                }
+                                if(bChange == 2 && P[0].bDown ||
+                                   nAmplitude == nTemp)
+                                        bChange = 0;
+                                if(bChange == 3)
+                                        nAmplitude--;
+                                if(nAmplitude > nTemp + 2) 
+                                        bChange = 3;
+                        }
+
+                        if(bStaticHeight == 2)
+                                if(P[i].bDown)
+                                        P[i].k = nAmplitude - nTemp;
+                        //Cannot be n->bUp since it can do the operation while the particle is visually above k which is our new y, this will freeze the particle
+                        
+                  
+                        i++;
+        }
+                
+                refreshFrame();
+                for(y = 0; y < MAXy; y++) {
+                        printf("||");
+                        for(x = 0; x < MAXx; x++)
+                                printf("%c", arrayArea[y][x]);
+                        printf("||\n");
+                }
+                printf("=======================\n\n");
+                while(f < 19) {
+                        printf("%f ", P[f].fMomentum);
+                        if(i == 4 || i == 9 || i == 14)
+                                printf("\n");
+                        f++;
+                }
+                printf("\nAmplitude: %d", nAmplitude);
+                if(nMode == 1)
+                       printf("\n\nPress enter repeatedly to continue the motion of the wave");
+                centerFrame(); 
+
+                if(fTemp > -30)
+                        fTemp -= fInitialMomentum / 2;
+        }
+
+        return 0;
+}
+
+void
+Delay (int nSpeed, 
+       int nMode) 
+{
+        int i = 0, j = 0;
+        char cEnter = 'a';
+        
+        if(nMode == 1)
+                //Delay is dependent on how fast the user presses enter if mode 1:
+        	    while (cEnter != '\n')
+                      switch(i) {
+                              case 0:
+                              case 1:
+                                      scanf("%c", &cEnter);
+                                      i++; 
+                                      //Avoid  endlessly scanning the newlines of momentum display by condition using i
+                                      break;
+                              case 2:
+                                      scanf("%c", &cEnter);
+                                      break;
+                      }
+        else
+		        //Delay is dependent on speed input if mode 2:
+                for(i = 0; i < nSpeed * 2000; i++)
+                        for(j = 0; j < i; j++);
+}
+
+int 
+isValid (char strInput[]) 
+{
+        int nStringLength = stringLength(strInput), 
+		    i = 0;
+        
+        //Check if a string is valid, it should not cast anything else other than a number or space:
+        for (i = 0; i < nStringLength; i++)
+                if (strInput[i] > '0' && strInput[i] <= '9' && strInput[i] >= ' ')
+                        return 1; //True
+                        
+        return 0; //False
+}
+
+int
+stringLength (char strInput[]) 
+{
+        int nLength = 0, 
+		    i = 0;
+		
+		    //Measure the string length without counting in nulls or newlines:
+        for(i = 0; strInput[i] != '\0' && strInput[i] != '\n'; i++)
+                nLength += 1;
+                
+        return nLength;
+}
+
+void 
+refreshFrame () 
+{
+        int i = 0;
+        
+        //Print 40 new lines to push the updated display downwards:
+        for (i = 0; i < 40; i++)
+                printf("\n");
+}
+
+void 
+centerFrame () 
+{
+        int i = 0;
+        
+        //Print 25 new lines to push and center the updated display upwards:
+        for (i = 0; i < 5; i++)
+                printf("\n");
+}
+
+void 
+updateParticles (struct Particle P[], 
+                 char arrayArea[MAXy][MAXx],
+                 int nAmplitude)
+{
+        int i = 0, x = 0, y = 0, j = 0, bSplash = 0;
+        while (i < 19) {
+                for (y = 0; y < nAmplitude; y++)
+                        for (x = 0; x < MAXx; x++) {
+                                if(P[i].x == x &&
+                                   P[i].y == y) {
+                                        if(P[i].bDown) {
+                                                arrayArea[y - 1][x] = ' ';
+                                                arrayArea[y][x] = 'v';
+                                        }
+                                        else if(P[i].bUp) {
+                                                arrayArea[y + 1][x] = '#';
+                                                arrayArea[y][x] = '^';
+                                                if(arrayArea[y + 1][x + 1] == ' ' &&
+                                                   arrayArea[y + 1][x - 1] == ' ')
+                                                        arrayArea[y + 1][x] = ' ';
+                                        }
+                                }
+                                else if(arrayArea[y][x] != 'v' &&
+                                        arrayArea[y][x] != '^' &&
+                                        arrayArea[y][x] != '&' &&
+                                        arrayArea[y][x] != ' ')
+                                        arrayArea[y][x] = '#';
+                        }
+                for (y = nAmplitude; y <= MAXy; y++)
+                        for (x = 0; x < MAXx; x++) 
+                                arrayArea[y][x] = '#';
+                i++;
+        }
+}
